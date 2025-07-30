@@ -34,6 +34,9 @@ jobs:
             ' > mcp-release-table.md
           echo "found=$(cat mcp-release-table.md | wc -l)" >> $GITHUB_OUTPUT
 
+      - name: Show GITHUB_OUTPUT
+        run: cat $GITHUB_OUTPUT
+
       - name: Read last known MCP release tag
         id: last_release
         run: |

@@ -12,7 +12,7 @@ curl -s https://api.github.com/repos/Azure/azure-mcp/releases | \
       (map("| \(.tag_name) | \(.published_at) | [zip](\(.zipball_url)) |"))) | 
       .[] 
     end
-  ' > mcp-release-table.md
+  ' > ../.github/mcp-release.md
 
 # Output the list of tags found
 tags=$(curl -s https://api.github.com/repos/Azure/azure-mcp/releases | jq -r --arg since "$since" '.[] | select(.published_at >= $since) | .tag_name')
