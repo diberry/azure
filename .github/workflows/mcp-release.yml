@@ -1,4 +1,4 @@
-name: MCP Release Monitor
+name: Azure MCP - releases
 
 permissions:
   contents: write
@@ -16,11 +16,23 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Get latest MCP release tag
-        id: latest_release
+      - name: Get MCP releases in last 24 hours
+        id: recent_releases
         run: |
-          curl -s https://api.github.com/repos/Azure/azure-mcp/releases/latest | jq -r .tag_name > mcp-release.txt
-          echo "tag=$(cat mcp-release.txt)" >> $GITHUB_OUTPUT
+          now=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          since=$(date -u -d "24 hours ago" +"%Y-%m-%dT%H:%M:%SZ")
+          curl -s https://api.github.com/repos/Azure/azure-mcp/releases | \
+            jq -r --arg since "$since" '
+              [ .[] | select(.published_at >= $since) ] |
+              if length == 0 then
+                "" 
+              else
+                (["| Tag | Published At | Zipball URL |", "|---|---|---|"] + 
+                (map("| \(.tag_name) | \(.published_at) | [zip](\(.zipball_url)) |"))) | 
+                .[] 
+              end
+            ' > mcp-release-table.md
+          echo "found=$(cat mcp-release-table.md | wc -l)" >> $GITHUB_OUTPUT
 
       - name: Read last known MCP release tag
         id: last_release
