@@ -1,0 +1,49 @@
+name: Rust SDK - Rust Version
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Runs daily
+  workflow_dispatch:
+
+jobs:
+  check-rust-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Make scripts executable
+        run: chmod +x ./scripts/*
+
+      - name: Get current Rust version
+        id: rust_version
+        run: |
+          ./scripts/rust-version.sh > rust-version.txt
+          echo "version=$(cat rust-version.txt)" >> $GITHUB_OUTPUT
+
+      - name: Read last known Rust version
+        id: last_version
+        run: |
+          if [ -f .github/rust-version.txt ]; then
+            echo "last=$(cat .github/rust-version.txt)" >> $GITHUB_OUTPUT
+          else
+            echo "last=" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Compare versions and create issue if changed
+        if: steps.rust_version.outputs.version != steps.last_version.outputs.last
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: "Rust version changed to ${{ steps.rust_version.outputs.version }}"
+          content-filepath: rust-version.txt
+          labels: rust-version
+
+      - name: Update tracked version
+        if: steps.rust_version.outputs.version != steps.last_version.outputs.last
+        run: |
+          echo "${{ steps.rust_version.outputs.version }}" > .github/rust-version.txt
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add .github/rust-version.txt
+          git commit -m "Update tracked Rust version"
+          git push
