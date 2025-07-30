@@ -1,5 +1,9 @@
 name: Rust SDK - Rust Version
 
+permissions:
+  contents: write
+  issues: write
+
 on:
   schedule:
     - cron: '0 0 * * *' # Runs daily
@@ -37,6 +41,7 @@ jobs:
           title: "Rust version changed to ${{ steps.rust_version.outputs.version }}"
           content-filepath: rust-version.txt
           labels: rust-version
+          token: ${{ secrets.GH_PAT }}
 
       - name: Update tracked version
         if: steps.rust_version.outputs.version != steps.last_version.outputs.last
