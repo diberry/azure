@@ -1,0 +1,10 @@
+{
+	"image": "mcr.microsoft.com/devcontainers/universal:2",
+	"features": {
+		"ghcr.io/azure/azure-dev/azd:0": {},
+		"ghcr.io/itsmechlark/features/act:1": {},
+		"ghcr.io/bartventer/arch-devcontainer-features/azure-cli:1": {},
+		"ghcr.io/devcontainers-extra/features/bash-command:1": {}
+	},
+	"postCreateCommand": "chmod +x ./scripts/*"
+}
