@@ -1,0 +1,51 @@
+name: MCP Release Monitor
+
+permissions:
+  contents: write
+  issues: write
+
+on:
+  schedule:
+    - cron: '0 1 * * *' # Runs daily
+  workflow_dispatch:
+
+jobs:
+  check-mcp-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Get latest MCP release tag
+        id: latest_release
+        run: |
+          curl -s https://api.github.com/repos/Azure/azure-mcp/releases/latest | jq -r .tag_name > mcp-release.txt
+          echo "tag=$(cat mcp-release.txt)" >> $GITHUB_OUTPUT
+
+      - name: Read last known MCP release tag
+        id: last_release
+        run: |
+          if [ -f .github/mcp-release.txt ]; then
+            echo "last=$(cat .github/mcp-release.txt)" >> $GITHUB_OUTPUT
+          else
+            echo "last=" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create issue if new MCP release
+        if: steps.latest_release.outputs.tag != steps.last_release.outputs.last
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: "New MCP Release: ${{ steps.latest_release.outputs.tag }}"
+          content-filepath: mcp-release.txt
+          labels: mcp-release
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Update tracked MCP release tag
+        if: steps.latest_release.outputs.tag != steps.last_release.outputs.last
+        run: |
+          echo "${{ steps.latest_release.outputs.tag }}" > .github/mcp-release.txt
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add .github/mcp-release.txt
+          git commit -m "Update tracked MCP release tag"
+          git push
