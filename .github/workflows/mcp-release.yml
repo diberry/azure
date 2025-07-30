@@ -19,23 +19,11 @@ jobs:
       - name: Get MCP releases in last 24 hours
         id: recent_releases
         run: |
-          now=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          since=$(date -u -d "24 hours ago" +"%Y-%m-%dT%H:%M:%SZ")
-          curl -s https://api.github.com/repos/Azure/azure-mcp/releases | \
-            jq -r --arg since "$since" '
-              [ .[] | select(.published_at >= $since) ] |
-              if length == 0 then
-                "" 
-              else
-                (["| Tag | Published At | Zipball URL |", "|---|---|---|"] + 
-                (map("| \(.tag_name) | \(.published_at) | [zip](\(.zipball_url)) |"))) | 
-                .[] 
-              end
-            ' > mcp-release-table.md
-          echo "found=$(cat mcp-release-table.md | wc -l)" >> $GITHUB_OUTPUT
-
-      - name: Show GITHUB_OUTPUT
-        run: cat $GITHUB_OUTPUT
+          chmod +x ./scripts/azure-mcp-release.sh
+          ./scripts/azure-mcp-release.sh
+          echo "found=$(cat ../.github/mcp-release.md | wc -l)" >> $GITHUB_OUTPUT
+          echo "GITHUB_OUTPUT contents:"
+          cat $GITHUB_OUTPUT
 
       - name: Read last known MCP release tag
         id: last_release
@@ -45,6 +33,13 @@ jobs:
           else
             echo "last=" >> $GITHUB_OUTPUT
           fi
+          echo "GITHUB_OUTPUT contents:"
+          cat $GITHUB_OUTPUT
+
+      - name: Show outputs in log
+        run: |
+          echo "Recent releases found: ${{ steps.recent_releases.outputs.found }}"
+          echo "Last known MCP release tag: ${{ steps.last_release.outputs.last }}"
 
       - name: Create issue if new MCP release
         if: steps.latest_release.outputs.tag != steps.last_release.outputs.last
